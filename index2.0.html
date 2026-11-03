@@ -1,0 +1,1559 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estación Quibdó - Telemetría Meteorológica</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    /* ===== Variables CSS y Temas ===== */
+    :root {
+      --bg-primary: #070b14;
+      --bg-secondary: #0c1220;
+      --bg-card: #0f172a;
+      --bg-card-hover: #162033;
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #00d4aa;
+      --accent-dim: #00a88a;
+      --accent-glow: rgba(0, 212, 170, 0.15);
+      --alert: #f59e0b;
+      --alert-glow: rgba(245, 158, 11, 0.15);
+      --danger: #ef4444;
+      --border: rgba(255, 255, 255, 0.06);
+      --shadow: rgba(0, 0, 0, 0.4);
+      --radius: 12px;
+      --font-mono: 'Courier New', Courier, monospace;
+    }
+
+    body.light-mode {
+      --bg-primary: #f1f5f9;
+      --bg-secondary: #e2e8f0;
+      --bg-card: #ffffff;
+      --bg-card-hover: #f8fafc;
+      --text-primary: #1e293b;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --accent: #0891b2;
+      --accent-dim: #0e7490;
+      --accent-glow: rgba(8, 145, 178, 0.12);
+      --alert: #d97706;
+      --alert-glow: rgba(217, 119, 6, 0.12);
+      --danger: #dc2626;
+      --border: rgba(0, 0, 0, 0.08);
+      --shadow: rgba(0, 0, 0, 0.08);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      transition: background 0.3s ease, color 0.3s ease;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: radial-gradient(ellipse at 30% 20%, var(--accent-glow) 0%, transparent 50%),
+                  radial-gradient(ellipse at 70% 80%, rgba(245, 158, 11, 0.04) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+      animation: bgPulse 20s ease-in-out infinite alternate;
+    }
+
+    @keyframes bgPulse {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(-5%, -3%); }
+    }
+
+    /* ===== Navbar ===== */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      height: 56px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    body.light-mode nav {
+      background: rgba(255, 255, 255, 0.85);
+    }
+
+    .nav-brand {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-brand i { font-size: 1.3rem; }
+
+    .nav-links {
+      display: flex;
+      gap: 4px;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .nav-links a:hover, .nav-links a.active {
+      color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-btn:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+      border-color: var(--accent);
+    }
+
+    .nav-btn.accent {
+      background: var(--accent);
+      color: #070b14;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+
+    .nav-btn.accent:hover {
+      background: var(--accent-dim);
+    }
+
+    .nav-btn.danger {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .nav-btn.danger:hover {
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    #theme-icon {
+      font-size: 1rem;
+      cursor: pointer;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      padding: 6px 10px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    #theme-icon:hover {
+      color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    /* ===== Main Layout ===== */
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 20px 120px;
+    }
+
+    /* ===== Vista Panel ===== */
+    #vista-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    #vista-info {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    #vista-info h2 {
+      font-size: 1.5rem;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    #vista-info h3 {
+      color: var(--text-primary);
+      margin: 16px 0 8px;
+      font-size: 1.05rem;
+    }
+
+    #vista-info p, #vista-info li {
+      color: var(--text-secondary);
+      line-height: 1.7;
+      font-size: 0.92rem;
+    }
+
+    #vista-info ul {
+      padding-left: 20px;
+    }
+
+    #vista-info li {
+      margin-bottom: 6px;
+    }
+
+    code {
+      background: var(--bg-card);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.85em;
+      color: var(--accent);
+    }
+
+    /* ===== Banner de Estado API ===== */
+    #api-status {
+      display: none;
+      padding: 10px 16px;
+      border-radius: var(--radius);
+      background: var(--alert-glow);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: var(--alert);
+      font-size: 0.85rem;
+      font-weight: 500;
+      animation: fadeSlideIn 0.3s ease;
+    }
+
+    #api-status.show { display: block; }
+
+    /* ===== Tarjetas KPI ===== */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--accent);
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .kpi-card:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(0, 212, 170, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px var(--shadow);
+    }
+
+    .kpi-card:hover::before { opacity: 1; }
+
+    .kpi-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .kpi-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1;
+      margin-bottom: 4px;
+      transition: color 0.3s ease;
+    }
+
+    .kpi-value.accent { color: var(--accent); }
+    .kpi-value.alert { color: var(--alert); }
+
+    .kpi-unit {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .kpi-icon {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      font-size: 1.4rem;
+      color: var(--text-muted);
+      opacity: 0.4;
+    }
+
+    /* ===== Recomendación IA ===== */
+    #recommendation-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      transition: all 0.3s ease;
+    }
+
+    #recommendation-box i {
+      color: var(--accent);
+      font-size: 1.2rem;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    #recommendation-box p {
+      color: var(--text-secondary);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    /* ===== Promedios ===== */
+    .section-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .section-card h3 {
+      font-size: 1rem;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-card h3 i {
+      color: var(--accent);
+    }
+
+    .avg-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .avg-item {
+      text-align: center;
+      padding: 12px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+    }
+
+    .avg-item .label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .avg-item .value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .avg-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .avg-btn {
+      padding: 8px 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      border-radius: 8px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .avg-btn:hover {
+      background: var(--accent-glow);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ===== Predicción ===== */
+    .pred-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .pred-item {
+      padding: 14px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .pred-item .label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .pred-item .value {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    /* ===== Export ===== */
+    .export-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    #export-format {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .export-btn {
+      padding: 8px 20px;
+      background: var(--accent);
+      color: #070b14;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .export-btn:hover {
+      background: var(--accent-dim);
+      transform: translateY(-1px);
+    }
+
+    /* ===== Badge ===== */
+    #status-conteo {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: var(--accent-glow);
+      border: 1px solid rgba(0, 212, 170, 0.2);
+      border-radius: 20px;
+      font-size: 0.78rem;
+      color: var(--accent);
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    #status-conteo.complete {
+      background: rgba(0, 212, 170, 0.25);
+      border-color: var(--accent);
+      animation: pulse 1.5s ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    /* ===== Modal ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .modal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      max-width: 480px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+      animation: scaleIn 0.2s ease;
+    }
+
+    .modal-card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 16px;
+      color: var(--accent);
+    }
+
+    #lista-historial-5 {
+      list-style: none;
+      margin-bottom: 20px;
+    }
+
+    #lista-historial-5 li {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+    }
+
+    #lista-historial-5 li:last-child {
+      border-bottom: none;
+    }
+
+    #lista-historial-5 li .label {
+      color: var(--text-secondary);
+    }
+
+    #lista-historial-5 li .value {
+      color: var(--text-primary);
+      font-weight: 600;
+      font-family: var(--font-mono);
+    }
+
+    .modal-close {
+      width: 100%;
+      padding: 10px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+
+    .modal-close:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent);
+    }
+
+    /* ===== Chat ===== */
+    #chat-window {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 360px;
+      max-height: 480px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+      z-index: 150;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      animation: slideUp 0.3s ease;
+    }
+
+    #chat-window.open {
+      display: flex;
+    }
+
+    .chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .chat-header h3 {
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chat-header h3 i { color: var(--accent); }
+
+    .chat-header button {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 4px;
+      transition: color 0.2s;
+    }
+
+    .chat-header button:hover { color: var(--danger); }
+
+    #chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 300px;
+    }
+
+    .chat-message {
+      max-width: 85%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      line-height: 1.45;
+      word-wrap: break-word;
+    }
+
+    .chat-message.user-message {
+      align-self: flex-end;
+      background: var(--accent);
+      color: #070b14;
+      font-weight: 500;
+      border-bottom-right-radius: 4px;
+    }
+
+    .chat-message.assistant-message {
+      align-self: flex-start;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border-bottom-left-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    #typing-indicator {
+      padding: 8px 16px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-style: italic;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .chat-input-area {
+      display: flex;
+      gap: 8px;
+      padding: 10px 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    #chat-input {
+      flex: 1;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--text-primary);
+      font-size: 0.85rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    #chat-input:focus {
+      border-color: var(--accent);
+    }
+
+    .chat-send {
+      padding: 8px 14px;
+      background: var(--accent);
+      color: #070b14;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.2s;
+      font-family: inherit;
+    }
+
+    .chat-send:hover {
+      background: var(--accent-dim);
+    }
+
+    /* ===== Chat Toggle Button ===== */
+    #chat-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #070b14;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0, 212, 170, 0.3);
+      z-index: 140;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.25s ease;
+    }
+
+    #chat-toggle:hover {
+      transform: scale(1.08);
+      box-shadow: 0 6px 28px rgba(0, 212, 170, 0.4);
+    }
+
+    #chat-toggle.hidden { display: none; }
+
+    /* ===== Animaciones ===== */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 768px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .avg-grid { grid-template-columns: 1fr; }
+      .pred-grid { grid-template-columns: 1fr; }
+      nav { padding: 0 12px; gap: 4px; }
+      .nav-links a { padding: 6px 10px; font-size: 0.78rem; }
+      .nav-btn { padding: 5px 10px; font-size: 0.75rem; }
+      #chat-window {
+        width: calc(100vw - 40px);
+        right: 20px;
+        bottom: 80px;
+        max-height: 60vh;
+      }
+      main { padding: 16px 12px 120px; }
+    }
+
+    @media (max-width: 480px) {
+      .kpi-grid { grid-template-columns: 1fr; }
+      .nav-actions { gap: 4px; }
+      .nav-btn span { display: none; }
+    }
+
+    /* ===== Scrollbar ===== */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+  <!-- Banner de estado de la API -->
+  <div id="api-status"></div>
+
+  <!-- Barra de navegación -->
+  <nav>
+    <div class="nav-brand">
+      <i class="fas fa-temperature-half"></i>
+      Estación Quibdó
+    </div>
+    <div class="nav-links">
+      <a href="#" id="link-panel" onclick="cambiarVista(false); return false;">Panel</a>
+      <a href="#" id="link-doc" onclick="cambiarVista(true); return false;">Documentación</a>
+    </div>
+    <div class="nav-actions">
+      <button id="theme-icon" onclick="toggleDarkMode()" title="Cambiar tema">
+        <i class="fas fa-moon"></i>
+      </button>
+      <button class="nav-btn" onclick="solicitarApiKey()" title="Configurar API Key">
+        <i class="fas fa-key"></i> <span>API Key</span>
+      </button>
+      <button class="nav-btn danger" onclick="borrarApiKey()" title="Eliminar API Key guardada">
+        <i class="fas fa-trash"></i> <span>Borrar</span>
+      </button>
+      <button class="nav-btn accent" onclick="updateSensorData()">
+        <i class="fas fa-rotate"></i> <span>Actualizar ahora</span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Vista Panel -->
+    <section id="vista-panel">
+
+      <!-- Tarjetas KPI -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon"><i class="fas fa-thermometer-half"></i></div>
+          <div class="kpi-label">Temperatura</div>
+          <div class="kpi-value accent" id="temp-val">--</div>
+          <div class="kpi-unit">°C</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon"><i class="fas fa-droplet"></i></div>
+          <div class="kpi-label">Humedad</div>
+          <div class="kpi-value" id="hum-val">--</div>
+          <div class="kpi-unit">%</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon"><i class="fas fa-temperature-arrow-up"></i></div>
+          <div class="kpi-label">Sensación Térmica</div>
+          <div class="kpi-value alert" id="heat-val">--</div>
+          <div class="kpi-unit">°C</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon"><i class="fas fa-water"></i></div>
+          <div class="kpi-label">Punto de Rocío</div>
+          <div class="kpi-value" id="dew-val">--</div>
+          <div class="kpi-unit">°C</div>
+        </div>
+      </div>
+
+      <!-- Recomendación de la IA -->
+      <div id="recommendation-box">
+        <i class="fas fa-brain"></i>
+        <p id="recommendation-text">Esperando primera lectura de datos&hellip;</p>
+      </div>
+
+      <!-- Promedio de las últimas 5 muestras -->
+      <div class="section-card">
+        <h3><i class="fas fa-chart-line"></i> Promedio de las últimas 5 muestras</h3>
+        <div class="avg-grid">
+          <div class="avg-item">
+            <div class="label">Temp Prom.</div>
+            <div class="value" id="avg-temp">--</div>
+          </div>
+          <div class="avg-item">
+            <div class="label">Humedad Prom.</div>
+            <div class="value" id="avg-hum">--</div>
+          </div>
+          <div class="avg-item">
+            <div class="label">Sensación Prom.</div>
+            <div class="value" id="avg-sensacion">--</div>
+          </div>
+        </div>
+        <div class="avg-buttons">
+          <button class="avg-btn" onclick="mostrarHistorialModal('temperatura', 'Desglose de Temperatura')">
+            <i class="fas fa-thermometer-half"></i> Ver Temp
+          </button>
+          <button class="avg-btn" onclick="mostrarHistorialModal('humedad', 'Desglose de Humedad')">
+            <i class="fas fa-droplet"></i> Ver Hum
+          </button>
+          <button class="avg-btn" onclick="mostrarHistorialModal('sensacion', 'Desglose de Sensación Térmica')">
+            <i class="fas fa-temperature-arrow-up"></i> Ver Sensación
+          </button>
+        </div>
+      </div>
+
+      <!-- Predicción IA -->
+      <div class="section-card">
+        <h3><i class="fas fa-wand-magic-sparkles"></i> Predicción de la Próxima Hora</h3>
+        <div class="pred-grid">
+          <div class="pred-item">
+            <span class="label">Temperatura</span>
+            <span class="value" id="ai-pred-temp">--</span>
+          </div>
+          <div class="pred-item">
+            <span class="label">Humedad</span>
+            <span class="value" id="ai-pred-hum">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Exportación -->
+      <div class="section-card">
+        <h3><i class="fas fa-file-export"></i> Exportar Datos</h3>
+        <div class="export-row">
+          <select id="export-format">
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+            <option value="txt">TXT</option>
+          </select>
+          <button class="export-btn" onclick="ejecutarDescargarFormatos()">
+            <i class="fas fa-download"></i> Descargar
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Vista Información / Documentación -->
+    <section id="vista-info">
+      <h2>Documentación de la Estación</h2>
+
+      <h3>¿Qué mide la estación?</h3>
+      <p>La estación meteorológica de Quibdó, Chocó, registra tres variables fundamentales del clima tropical húmedo del Pacífico colombiano:</p>
+      <ul>
+        <li><strong>Temperatura</strong> (°C): Valor de la temperatura ambiente medida.</li>
+        <li><strong>Humedad</strong> (%): Porcentaje de humedad relativa en el aire.</li>
+        <li><strong>Sensación Térmica</strong> (°C): Valor percibido que combina temperatura y humedad.</li>
+      </ul>
+
+      <h3>Fórmula del Punto de Rocío</h3>
+      <p>Se utiliza una aproximación simplificada:</p>
+      <p style="text-align:center; font-size:1.1rem; margin: 8px 0;">
+        Punto de Rocío = T − ((100 − H) / 5)
+      </p>
+      <p>Donde <code>T</code> es la temperatura en °C y <code>H</code> la humedad relativa en porcentaje. El resultado se redondea a 1 decimal.</p>
+
+      <h3>Esquema del Registro</h3>
+      <p>Cada muestra registrada contiene las siguientes claves en el esquema JSON:</p>
+      <code>temperatura</code>, <code>humedad</code>, <code>sensacion</code>
+      <p>Además, se almacenan la hora local de Bogotá (zona horaria de Colombia) para cada registro.</p>
+
+      <h3>Acerca del Promedio</h3>
+      <p>El promedio de las últimas 5 muestras se calcula <strong>al completar 5 registros</strong>. Una vez se alcanza este umbral, el búfer se reinicia automáticamente y se inicia un nuevo ciclo de acumulación. El badge cambia a "Promedio de 5 horas completado" mientras el contador de muestras se reinicia a 0.</p>
+
+      <h3>Obtención de API Key para Google AI Studio</h3>
+      <ol>
+        <li>Acceda a <a href="https://aistudio.google.com" target="_blank" style="color:var(--accent)">Google AI Studio</a> con una cuenta de Google.</li>
+        <li>Cree un proyecto o seleccione uno existente.</li>
+        <li>Genere una clave de API en la sección de configuración del proyecto.</li>
+        <li>Haga clic en el botón "API Key" de esta interfaz e ingrese la clave cuando se le solicite.</li>
+        <li>La clave se guarda en <code>localStorage</code> del navegador y se utiliza en la cabecera <code>x-goog-api-key</code> para todas las llamadas a la API de Gemini.</li>
+      </ol>
+    </section>
+  </main>
+
+  <!-- Modal de Historial -->
+  <div id="modal-historial" class="modal-overlay" onclick="cerrarModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <h2 id="modal-titulo"></h2>
+      <ul id="lista-historial-5"></ul>
+      <button class="modal-close" onclick="cerrarModal()">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- Botón flotante del chat -->
+  <button id="chat-toggle" onclick="toggleChat()" title="Abrir chat">
+    <i class="fas fa-comment"></i>
+  </button>
+
+  <!-- Ventana de Chat -->
+  <div id="chat-window">
+    <div class="chat-header">
+      <h3><i class="fas fa-robot"></i> Asistente Climatológico</h3>
+      <button onclick="toggleChat()" title="Cerrar chat"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div id="chat-messages"></div>
+    <div id="typing-indicator" style="display:none">escribiendo&hellip;</div>
+    <div class="chat-input-area">
+      <input id="chat-input" type="text" placeholder="Pregunta sobre el clima..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarMensajeChat();}">
+      <button class="chat-send" onclick="enviarMensajeChat()">Enviar</button>
+    </div>
+  </div>
+
+  <script>
+    /* ============================================================
+       CONSTANTES Y CONFIGURACIÓN
+       ============================================================ */
+    const MODELO = "gemini-2.5-flash";
+    const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent`;
+
+    // La API key se carga desde localStorage al iniciar. Nunca se hardcodea.
+    let apiKey = localStorage.getItem('GEMINI_API_KEY') || "";
+
+    // Búfer de lecturas y historial completo
+    let lecturaHistorial = [];
+    let ultimasCincoCompletas = [];
+
+    // Elementos del DOM (referenciados una sola vez al iniciar)
+    const vistaPanel = document.getElementById('vista-panel');
+    const vistaInfo = document.getElementById('vista-info');
+    const linkPanel = document.getElementById('link-panel');
+    const linkDoc = document.getElementById('link-doc');
+    const themeIcon = document.getElementById('theme-icon');
+    const apiStatus = document.getElementById('api-status');
+    const statusConteo = document.getElementById('status-conteo');
+    const recommendationText = document.getElementById('recommendation-text');
+    const chatWindow = document.getElementById('chat-window');
+    const chatToggle = document.getElementById('chat-toggle');
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const typingIndicator = document.getElementById('typing-indicator');
+    const modalHistorial = document.getElementById('modal-historial');
+    const modalTitulo = document.getElementById('modal-titulo');
+    const listaHistorial = document.getElementById('lista-historial-5');
+
+    /* ============================================================
+       FUNCIONES DE UTILIDAD
+       ============================================================ */
+
+    /** Escapa HTML para prevenir XSS al insertar texto en el chat */
+    function escapeHtml(texto) {
+      const div = document.createElement('div');
+      div.textContent = texto;
+      return div.innerHTML;
+    }
+
+    /** Muestra u oculta el banner de estado de la API con un mensaje */
+    function mostrarErrorBanner(mensaje) {
+      apiStatus.textContent = mensaje;
+      apiStatus.classList.add('show');
+      console.error('[API Status]', mensaje);
+    }
+
+    function limpiarErrorBanner() {
+      apiStatus.textContent = '';
+      apiStatus.classList.remove('show');
+    }
+
+    /* ============================================================
+       LLAMADA CENTRALIZADA A GEMINI
+       ============================================================ */
+
+    /**
+     * Función auxiliar única para todas las llamadas a la API de Gemini.
+     * @param {string} prompt - El texto del prompt para el modelo.
+     * @param {boolean} comoJson - Si true, solicita respuesta JSON con thinkingBudget:0.
+     * @returns {Promise<string>} El texto de la respuesta del modelo.
+     */
+    async function llamarGemini(prompt, comoJson = false) {
+      // Validar que hay una API key configurada
+      if (!apiKey) {
+        throw new Error('No hay API Key configurada. Use el botón "API Key" para guardarla.');
+      }
+
+      // Construir el cuerpo de la petición
+      const body = {
+        contents: [{
+          parts: [{ text: prompt }]
+        }]
+      };
+
+      // Si se solicita JSON, añadir configuración de generación
+      if (comoJson) {
+        body.generationConfig = {
+          responseMimeType: "application/json",
+          thinkingConfig: { thinkingBudget: 0 }
+        };
+      }
+
+      // Realizar la petición POST con la cabecera x-goog-api-key
+      const response = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey
+        },
+        body: JSON.stringify(body)
+      });
+
+      // Comprobar response.ok y lanzar error con detalle si falla
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Error HTTP ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+
+      // Extraer el texto de la respuesta
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) {
+        throw new Error('Respuesta vacía de la API');
+      }
+
+      return text;
+    }
+
+    /* ============================================================
+       CAMBIAR VISTA (Panel / Documentación)
+       ============================================================ */
+
+    function cambiarVista(esDoc) {
+      if (esDoc) {
+        vistaPanel.style.display = 'none';
+        vistaInfo.style.display = 'flex';
+        linkPanel.classList.remove('active');
+        linkDoc.classList.add('active');
+      } else {
+        vistaPanel.style.display = 'flex';
+        vistaInfo.style.display = 'none';
+        linkDoc.classList.remove('active');
+        linkPanel.classList.add('active');
+      }
+    }
+
+    /* ============================================================
+       TEMA OSCURO / CLARO
+       ============================================================ */
+
+    function toggleDarkMode() {
+      const body = document.body;
+      const icon = themeIcon.querySelector('i');
+      if (body.classList.contains('light-mode')) {
+        body.classList.remove('light-mode');
+        icon.classList.remove('fa-sun');
+        icon.classList.add('fa-moon');
+        localStorage.setItem('quibdo-theme', 'dark');
+      } else {
+        body.classList.add('light-mode');
+        icon.classList.remove('fa-moon');
+        icon.classList.add('fa-sun');
+        localStorage.setItem('quibdo-theme', 'light');
+      }
+    }
+
+    // Cargar tema guardado al iniciar
+    if (localStorage.getItem('quibdo-theme') === 'light') {
+      document.body.classList.add('light-mode');
+      themeIcon.querySelector('i').classList.remove('fa-moon');
+      themeIcon.querySelector('i').classList.add('fa-sun');
+    }
+
+    /* ============================================================
+       SOLICITAR / BORRAR API KEY
+       ============================================================ */
+
+    function solicitarApiKey() {
+      const key = prompt('Ingrese su API Key de Google AI Studio:');
+      if (key && key.trim().length > 0) {
+        apiKey = key.trim();
+        localStorage.setItem('GEMINI_API_KEY', apiKey);
+        alert('API Key guardada correctamente.');
+        updateSensorData();
+      } else if (key !== null) {
+        alert('No se ingresó ninguna clave.');
+      }
+    }
+
+    function borrarApiKey() {
+      localStorage.removeItem('GEMINI_API_KEY');
+      apiKey = "";
+      alert('API Key eliminada.');
+    }
+
+    /* ============================================================
+       ACTUALIZAR DATOS DEL SENSOR
+       ============================================================ */
+
+    async function updateSensorData() {
+      limpiarErrorBanner();
+
+      const prompt = `Eres un sistema de telemetría meteorológica para Quibdó, Chocó, Colombia. Genera exactamente un objeto JSON con estas claves y solo estas claves: temperatura (número decimal entre 26.0 y 29.5, °C), humedad (número decimal entre 82 y 92, %), sensacion (número decimal, sensación térmica °C), pred_temp (número decimal, predicción temperatura próxima hora °C), pred_hum (número decimal, predicción humedad próxima hora %), recomendacion (string breve de recomendación climática). No incluyas texto fuera del JSON ni markdown fences.`;
+
+      try {
+        const raw = await llamarGemini(prompt, true);
+
+        // Limpiar posibles fences ```json del markdown
+        const limpio = raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+
+        // Buscar el objeto JSON en el texto
+        const inicio = limpio.indexOf('{');
+        const fin = limpio.lastIndexOf('}') + 1;
+        if (inicio === -1 || fin === 0) {
+          throw new Error('No se encontró JSON válido en la respuesta');
+        }
+
+        const data = JSON.parse(limpio.substring(inicio, fin));
+
+        // Validar que todas las claves requeridas estén presentes
+        const required = ['temperatura', 'humedad', 'sensacion', 'pred_temp', 'pred_hum', 'recomendacion'];
+        for (const key of required) {
+          if (data[key] === undefined || data[key] === null) {
+            throw new Error(`Campo faltante en la respuesta: ${key}`);
+          }
+        }
+
+        // Procesar la lectura con los datos obtenidos
+        procesarLectura(
+          parseFloat(data.temperatura),
+          parseFloat(data.humedad),
+          parseFloat(data.sensacion),
+          data.recomendacion,
+          parseFloat(data.pred_temp),
+          parseFloat(data.pred_hum)
+        );
+
+        limpiarErrorBanner();
+
+      } catch (error) {
+        console.error('Error en updateSensorData:', error.message);
+        mostrarErrorBanner(`Modo local activo: ${error.message}. Se usan datos simulados.`);
+        usarSimulacionLocal();
+      }
+    }
+
+    /* ============================================================
+       SIMULACIÓN LOCAL (fallback cuando la API falla)
+       ============================================================ */
+
+    function usarSimulacionLocal() {
+      mostrarErrorBanner('Modo local activo: datos simulados (sin conexión a Gemini)');
+
+      const temp = 26.0 + Math.random() * 3.5;          // 26.0 – 29.5
+      const hum = 82 + Math.random() * 10;               // 82 – 92
+      const heatIndex = temp + (hum - 80) * 0.15;        // Sensación térmica aproximada
+      const predTemp = temp + (Math.random() - 0.5) * 1.5;
+      const predHum = hum + (Math.random() - 0.5) * 3;
+      const recomendacion = 'Clima tropical húmedo. Se recomienda hidratación constante y uso de protección solar. Posible presencia de lluvias tropicales en horas de la tarde.';
+
+      procesarLectura(temp, hum, heatIndex, recomendacion, predTemp, predHum);
+    }
+
+    /* ============================================================
+       PROCESAR LECTURA Y ACTUALIZAR UI
+       ============================================================ */
+
+    function procesarLectura(temp, hum, heatIndex, recomendacion, predTemp, predHum) {
+      // Pintar KPI
+      document.getElementById('temp-val').textContent = temp.toFixed(1);
+      document.getElementById('hum-val').textContent = hum.toFixed(1);
+      document.getElementById('heat-val').textContent = heatIndex.toFixed(1);
+
+      // Calcular punto de rocío: T - ((100 - H) / 5) con 1 decimal
+      const dew = temp - ((100 - hum) / 5);
+      document.getElementById('dew-val').textContent = dew.toFixed(1);
+
+      // Pintar predicciones
+      document.getElementById('ai-pred-temp').textContent = predTemp.toFixed(1) + ' °C';
+      document.getElementById('ai-pred-hum').textContent = predHum.toFixed(1) + ' %';
+
+      // Evaluar clima y pintar recomendación
+      evaluarClima(recomendacion);
+
+      // Guardar en el búfer de lectura con hora local de Bogotá
+      const ahora = new Date();
+      const horaBogota = ahora.toLocaleString('es-CO', { timeZone: 'America/Bogota' });
+      lecturaHistorial.push({
+        temperatura: temp,
+        humedad: hum,
+        sensacion: heatIndex,
+        hora: horaBogota
+      });
+
+      // Actualizar badge
+      statusConteo.textContent = lecturaHistorial.length + '/5';
+      statusConteo.classList.remove('complete');
+
+      // Al completar 5 muestras: calcular promedios con bucle for explícito
+      if (lecturaHistorial.length === 5) {
+        let sumTemp = 0, sumHum = 0, sumSens = 0;
+        for (let i = 0; i < lecturaHistorial.length; i++) {
+          sumTemp += lecturaHistorial[i].temperatura;
+          sumHum += lecturaHistorial[i].humedad;
+          sumSens += lecturaHistorial[i].sensacion;
+        }
+
+        const avgTemp = sumTemp / 5;
+        const avgHum = sumHum / 5;
+        const avgSens = sumSens / 5;
+
+        document.getElementById('avg-temp').textContent = avgTemp.toFixed(1) + ' °C';
+        document.getElementById('avg-hum').textContent = avgHum.toFixed(1) + ' %';
+        document.getElementById('avg-sensacion').textContent = avgSens.toFixed(1) + ' °C';
+
+        // Copiar a historial completo y reiniciar búfer
+        ultimasCincoCompletas = lecturaHistorial.slice();
+        statusConteo.textContent = 'Promedio de 5 horas completado';
+        statusConteo.classList.add('complete');
+        lecturaHistorial = [];
+      }
+    }
+
+    /* ============================================================
+       EVALUAR CLIMA (recomendación)
+       ============================================================ */
+
+    function evaluarClima(recomendacion) {
+      const icon = recommendationText.parentElement.querySelector('i');
+      recommendationText.textContent = recomendacion;
+
+      // Cambiar ícono según la recomendación
+      const texto = recomendacion.toLowerCase();
+      if (texto.includes('lluvia') || texto.includes('precipitación')) {
+        icon.className = 'fas fa-cloud-rain';
+        icon.style.color = 'var(--alert)';
+      } else if (texto.includes('calor') || texto.includes('alta') || texto.includes('prohibición')) {
+        icon.className = 'fas fa-sun';
+        icon.style.color = 'var(--danger)';
+      } else {
+        icon.className = 'fas fa-check-circle';
+        icon.style.color = 'var(--accent)';
+      }
+    }
+
+    /* ============================================================
+       MODAL DE HISTORIAL
+       ============================================================ */
+
+    function mostrarHistorialModal(tipo, titulo) {
+      if (ultimasCincoCompletas.length === 0) {
+        alert('Aún no se han completado 5 muestras para mostrar el historial.');
+        return;
+      }
+
+      modalTitulo.textContent = titulo;
+      listaHistorial.innerHTML = '';
+
+      // Definir unidad según tipo
+      const unidades = { temperatura: '°C', humedad: '%', sensacion: '°C' };
+      const unidad = unidades[tipo] || '';
+      const clave = tipo;
+
+      ultimasCincoCompletas.forEach((muestra, index) => {
+        const li = document.createElement('li');
+
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'label';
+        labelSpan.textContent = `Muestra Horaria #${index + 1} — ${muestra.hora}`;
+
+        const valueSpan = document.createElement('span');
+        valueSpan.className = 'value';
+        valueSpan.textContent = muestra[clave].toFixed(1) + ' ' + unidad;
+
+        li.appendChild(labelSpan);
+        li.appendChild(valueSpan);
+        listaHistorial.appendChild(li);
+      });
+
+      modalHistorial.classList.add('open');
+    }
+
+    function cerrarModal(e) {
+      // Si se pasó un evento, verificar si fue clic en el fondo
+      if (e && e.target !== modalHistorial) return;
+      modalHistorial.classList.remove('open');
+    }
+
+    // Cerrar modal con tecla Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modalHistorial.classList.contains('open')) {
+        cerrarModal();
+      }
+    });
+
+    /* ============================================================
+       EXPORTACIÓN DE DATOS (Blob + descarga real)
+       ============================================================ */
+
+    function ejecutarDescargarFormatos() {
+      const formato = document.getElementById('export-format').value;
+      const muestras = ultimasCincoCompletas.length > 0 ? ultimasCincoCompletas : lecturaHistorial;
+      if (muestras.length === 0) {
+        alert('No hay datos disponibles para exportar. Espere a que se registren muestras.');
+        return;
+      }
+
+      // Promedios
+      let sumTemp = 0, sumHum = 0, sumSens = 0;
+      for (let i = 0; i < muestras.length; i++) {
+        sumTemp += muestras[i].temperatura;
+        sumHum += muestras[i].humedad;
+        sumSens += muestras[i].sensacion;
+      }
+      const avgTemp = sumTemp / muestras.length;
+      const avgHum = sumHum / muestras.length;
+      const avgSens = sumSens / muestras.length;
+
+      const fecha = new Date().toISOString().split('T')[0];
+      let contenido, tipoMime, extension;
+
+      if (formato === 'csv') {
+        contenido = 'hora,temperatura,humedad,sensacion\n';
+        muestras.forEach(m => {
+          contenido += `${m.hora},${m.temperatura.toFixed(1)},${m.humedad.toFixed(1)},${m.sensacion.toFixed(1)}\n`;
+        });
+        contenido += `\npromedio,${avgTemp.toFixed(1)},${avgHum.toFixed(1)},${avgSens.toFixed(1)}\n`;
+        tipoMime = 'text/csv';
+        extension = 'csv';
+      } else if (formato === 'json') {
+        const obj = {
+          muestras: muestras,
+          promedios: { temperatura: avgTemp, humedad: avgHum, sensacion: avgSens }
+        };
+        contenido = JSON.stringify(obj, null, 2);
+        tipoMime = 'application/json';
+        extension = 'json';
+      } else {
+        // TXT
+        contenido = `Telemetría Meteorológica - Estación Quibdó\nFecha de exportación: ${new Date().toLocaleString('es-CO')}\n\nMuestras:\n`;
+        muestras.forEach((m, i) => {
+          contenido += `Muestra #${i + 1} (${m.hora}): Temp=${m.temperatura.toFixed(1)}°C, Hum=${m.humedad.toFixed(1)}%, Sensación=${m.sensacion.toFixed(1)}°C\n`;
+        });
+        contenido += `\nPromedios (últimas ${muestras.length} muestras):\n`;
+        contenido += `  Temperatura: ${avgTemp.toFixed(1)}°C\n`;
+        contenido += `  Humedad: ${avgHum.toFixed(1)}%\n`;
+        contenido += `  Sensación: ${avgSens.toFixed(1)}°C\n`;
+        tipoMime = 'text/plain';
+        extension = 'txt';
+      }
+
+      // Crear Blob y descargar con <a download>
+      const blob = new Blob([contenido], { type: tipoMime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `telemetria-quibdo-${fecha}.${extension}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    /* ============================================================
+       CHAT FLOTANTE
+       ============================================================ */
+
+    function toggleChat() {
+      const isOpen = chatWindow.classList.toggle('open');
+      chatToggle.classList.toggle('hidden', isOpen);
+      if (isOpen) {
+        chatInput.focus();
+      }
+    }
+
+    /** Añade un mensaje al chat usando createElement y textContent (seguro contra XSS) */
+    function addChatMessage(texto, esUsuario) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = esUsuario ? 'chat-message user-message' : 'chat-message assistant-message';
+
+      const textSpan = document.createElement('span');
+      textSpan.textContent = texto; // textContent escapa automáticamente cualquier HTML
+
+      msgDiv.appendChild(textSpan);
+      chatMessages.appendChild(msgDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    /** Obtiene una respuesta local según palabras clave del mensaje del usuario */
+    function obtenerRespuestaLocal(texto) {
+      const t = texto.toLowerCase();
+      if (t.includes('lluvia') || t.includes('clima') || t.includes('tiempo') || t.includes('precipitación')) {
+        return 'En Quibdó, Chocó, el clima es de tipo tropical húmedo monzónico. Hay alta probabilidad de lluvias tropicales frecuentes, especialmente entre abril y noviembre. Se recomienda llevar protección contra la lluvia.';
+      }
+      if (t.includes('temperatura') || t.includes('calor') || t.includes('qué tan') || t.includes('caliente')) {
+        return 'Las temperaturas en Quibdó suelen oscilar entre 26°C y 29.5°C, típicas del clima tropical del Pacífico colombiano. La sensación térmica puede ser mayor por la alta humedad relativa.';
+      }
+      return 'Para información detallada sobre el clima de Quibdó, Chocó, consulte la estación meteorológica local o la Guía Climática del Pacífico colombiano. También puede preguntarme por temperatura, humedad o condiciones de lluvia.';
+    }
+
+    async function enviarMensajeChat() {
+      const texto = chatInput.value.trim();
+      if (!texto) return;
+
+      // Añadir mensaje del usuario (usando escapeHtml + createElement)
+      addChatMessage(escapeHtml(texto), true);
+      chatInput.value = '';
+
+      // Mostrar indicador de escritura
+      typingIndicator.style.display = 'block';
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+
+      try {
+        const prompt = `Eres el Asistente Climatológico de Quibdó, Chocó. Responde de forma breve, amable y técnica a esta pregunta del usuario: ${texto}`;
+        const respuesta = await llamarGemini(prompt);
+        typingIndicator.style.display = 'none';
+        addChatMessage(respuesta, false);
+        limpiarErrorBanner();
+      } catch (error) {
+        typingIndicator.style.display = 'none';
+        console.error('Error en chat:', error.message);
+
+        // Mostrar error en banner si no hay API key o falla la conexión
+        if (error.message.includes('No hay API Key')) {
+          mostrarErrorBanner('Chat sin API Key: usando respuestas locales.');
+        } else {
+          mostrarErrorBanner(`Error en chat: ${error.message}. Respuesta local usada.`);
+        }
+
+        // Respuesta local como fallback
+        const respuestaLocal = obtenerRespuestaLocal(texto);
+        addChatMessage(respuestaLocal, false);
+      }
+    }
+
+    /* ============================================================
+       INICIO: Cargar API key, primera lectura, y intervalo
+       ============================================================ */
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Ya se cargó apiKey desde localStorage arriba
+      if (apiKey) {
+        console.log('API Key cargada desde localStorage.');
+      }
+
+      // Primera carga de datos
+      updateSensorData();
+
+      // Actualizar automáticamente cada hora (3600000 ms)
+      setInterval(updateSensorData, 3600000);
+    });
+  </script>
+</body>
+</html>
